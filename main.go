@@ -8,6 +8,10 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+func sendBuffer(log_channel chan string, buffer string) {
+	log_channel <- buffer
+}
+
 func watchEvent(watcher *fsnotify.Watcher) {
 	for {
 		select {
@@ -16,12 +20,12 @@ func watchEvent(watcher *fsnotify.Watcher) {
 				return
 			}
 			if event.Has(fsnotify.Write) {
-				fmt.Println("Modified file : ", event.Name)
+				sendBuffer(LogChannel, "Modified file : "+event.Name)
 			} else if event.Has(fsnotify.Create) {
-				fmt.Println("Created file : ", event.Name)
+				sendBuffer(LogChannel, "Created file : "+event.Name)
 				watcher.Add(event.Name)
 			} else if event.Has(fsnotify.Remove) {
-				fmt.Println("Removed file : ", event.Name)
+				sendBuffer(LogChannel, "Removed file : "+event.Name)
 				watcher.Remove(event.Name)
 			}
 		case err, ok := <-watcher.Errors:
@@ -50,5 +54,6 @@ func main() {
 	}
 	filepath.Walk("./test-dir", watchDir)
 	go watchEvent(watcher)
+	go runServer()
 	select {}
 }
